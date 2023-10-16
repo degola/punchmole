@@ -2,7 +2,6 @@ FROM node:20-alpine as build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN apk update && apk upgrade
-#     apk add --no-cache bash git openssh
 RUN npm install --omit dev
 COPY . ./
 
