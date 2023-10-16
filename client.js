@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import { PunchmoleClient } from "./app.js";
 
 const PUNCHMOLE_ENDPOINT_URL = process.env.PUNCHMOLE_ENDPOINT_URL || 'ws://localhost:10000/client'
