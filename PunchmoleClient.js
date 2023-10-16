@@ -9,6 +9,24 @@ export function PunchmoleClient(apiKey, domain, targetUrl, endpointUrl) {
     ws.on('open', () => {
         console.log(new Date(), 'connection with upstream server opened to forward url', targetUrl)
         ws.send(JSON.stringify({'type': 'register', 'domain': domain, 'apiKey': apiKey}))
+        ws.isAlive = true
+    })
+    const interval = setInterval(() => {
+        ws.ping()
+    }, 10000)
+    ws.on('ping', () => {
+        ws.pong()
+    })
+    ws.on('pong', () => {
+    })
+    ws.on('close', () => {
+        console.log(new Date(), 'connection with upstream server closed')
+        clearInterval(interval)
+        eventEmitter.emit('close')
+    })
+    ws.on('error', (err) => {
+        console.error(new Date(), 'websocket error', err)
+        eventEmitter.emit('error', err)
     })
     const controllers = {}
     const requests = {}
@@ -16,6 +34,10 @@ export function PunchmoleClient(apiKey, domain, targetUrl, endpointUrl) {
         const request = JSON.parse(rawMessage)
         let targetRequest = requests[request.id]
         switch(request.type) {
+            case 'error':
+                console.error(new Date(), 'error received from upstream server', request)
+                eventEmitter.emit('error', request)
+                break
             case 'registered':
                 console.log(new Date(), 'registration successful', request)
                 eventEmitter.emit('registered', request)
