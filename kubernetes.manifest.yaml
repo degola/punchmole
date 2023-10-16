@@ -1,0 +1,75 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: punchmole-configuration
+  namespace: ${ENVIRONMENT}
+type: Opaque
+stringData:
+  API_KEYS: "${PUNCHMOLE_API_KEYS}"
+
+---
+# pod for cronjob apple-crawl-active-keywords
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: punchmole-server
+  namespace: ${ENVIRONMENT}
+spec:
+  selector:
+    matchLabels:
+      app: punchmole-server
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: punchmole-server
+    spec:
+      imagePullSecrets:
+        - name: gitlab-registry-credentials
+      containers:
+        - name: punchmole-server
+          image: ${CI_REGISTRY_FULL_IMAGE}
+          resources:
+            requests:
+              memory: 1G
+          env:
+            - name: API_KEYS
+              valueFrom:
+                secretKeyRef:
+                  name: punchmole-configuration
+                  key: API_KEYS
+            - name: PORT
+              value: "10000"
+---
+# service for keywords rest service
+kind: Service
+apiVersion: v1
+metadata:
+  name: punchmole-server
+  namespace: ${ENVIRONMENT}
+spec:
+  selector:
+    app: punchmole-server
+  ports:
+    - port: 10000 # Default port for image
+      targetPort: 10000
+---
+# ingress for keywords rest service
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: punchmole-server
+  namespace: ${ENVIRONMENT}
+spec:
+  rules:
+    - host: "*.${PUNCHMOLE_DOMAIN}"
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: punchmole-server
+                port:
+                  number: 10000

@@ -1,0 +1,65 @@
+stages:
+  - build
+  - deploy
+
+variables:
+  DEPLOYMENT_MANIFEST_PATH: ./kubernetes.manifest.yaml
+  DOCKER_DRIVER: overlay
+
+# this command will be run before every script
+default:
+  image: docker:20-git
+  services:
+    - docker:20-dind
+  before_script:
+    - export VERSION=v`date +%Y%m%d`-`echo "$CI_COMMIT_SHA" | head -c7`
+    - export CI_REGISTRY_FULL_IMAGE="$CI_REGISTRY_IMAGE:$VERSION"
+
+build:
+  stage: build
+  script:
+    - apk update
+    - echo "TAG=$VERSION" >> variables.env             # and append to the variables.env file
+    - docker login -u gitlab-ci-token -p "${CI_JOB_TOKEN}" "${CI_REGISTRY}"
+    - docker build -t $CI_REGISTRY_IMAGE:$VERSION -t $CI_REGISTRY_IMAGE:latest .
+    - docker push $CI_REGISTRY_IMAGE:$VERSION
+    - docker push $CI_REGISTRY_IMAGE:latest
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  artifacts:
+    reports:
+      dotenv: variables.env
+
+deploy_production:
+  stage: deploy
+  image: alpine/k8s:1.20.7
+  needs:
+    - job: build
+      artifacts: true
+  script:
+    ###
+    # get gitlab release-cli to create a release
+    - echo "preparing for release $VERSION"
+    - wget https://gitlab.com/gitlab-org/release-cli/-/package_files/27206485/download -O /usr/local/bin/release-cli
+    - chmod +x /usr/local/bin/release-cli
+    ###
+    - echo "Deploy to production"
+    - apk update && apk add gettext
+    - envsubst < $DEPLOYMENT_MANIFEST_PATH
+    - envsubst < $DEPLOYMENT_MANIFEST_PATH | kubectl -s $K8S_SERVER --token $K8S_TOKEN apply -f -
+  variables:
+    ENVIRONMENT: tools
+  environment:
+    name: tools
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  release:
+    name: "Release $CI_COMMIT_SHA"
+    description: "automatic release"  # $EXTRA_DESCRIPTION and the $VERSION
+    tag_name: "$CI_COMMIT_SHA"                                                 # variables must be defined elsewhere
+    ref: "$CI_COMMIT_SHA"                                            # in the pipeline. For example, in the
+    assets:
+      links:
+        - name: "Docker Container Image"
+          url: "https://$CI_REGISTRY_IMAGE:$VERSION"
+
