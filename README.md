@@ -19,6 +19,8 @@ This project is experimental and currently used for some pet-projects, quickly h
 
 Well-known issues:
 - no websocket support, yet...
+- no error handling
+- no tests
 
 ## Server
 
@@ -63,7 +65,7 @@ to receive requests for.
 
 | Variable               | Default Value               | Description                                                                                     |
 |------------------------|-----------------------------|-------------------------------------------------------------------------------------------------|
-| API_KEY                | n/a                         | An API-key the server accepts                                                                   |
+| PUNCHMOLE_API_KEY      | n/a                         | An API-key the server accepts                                                                   |
 | DOMAIN                 | n/a                         | The domain the client wants to receive requests for                                             |
 | TARGET_URL             | http://localhost:3000       | URL to which the incoming requests are forwarded to, either local or within the private network |
 | PUNCHMOLE_ENDPOINT_URL | ws://localhost:10000/client | Websocket URL of the Punchmole server                                                           |
