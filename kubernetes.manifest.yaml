@@ -61,6 +61,10 @@ kind: Ingress
 metadata:
   name: punchmole-server
   namespace: ${ENVIRONMENT}
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "360s"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "360s"
+    nginx.ingress.kubernetes.io/use-forwarded-headers: "true"
 spec:
   rules:
     - host: "*.${PUNCHMOLE_DOMAIN}"
