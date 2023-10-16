@@ -1,0 +1,38 @@
+{
+  "name": "punchmole",
+  "version": "0.1",
+  "description": "A simple reverse proxy tunnel service which is easy deployable and can be easily customised and used with nodejs code",
+  "main": "app.js",
+  "type": "module",
+  "bin": {
+    "revmole": "client.js",
+    "revmole-server": "server.js"
+  },
+  "keywords": [
+    "punchmole",
+    "ngrok",
+    "tunnelmole",
+    "reverse proxy",
+    "tunnel",
+    "local tunnel"
+  ],
+  "scripts": {
+    "server": "node server.js",
+    "client": "node client.js",
+    "server-dev": "nodemon server.js",
+    "client-dev": "nodemon client.js"
+  },
+  "author": "Sebastian Lagemann <sebastian@gomsilo.com>",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "ws": "^8.14.2"
+  },
+  "repository": {
+    "type": "git",
+
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
