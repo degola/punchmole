@@ -90,7 +90,7 @@ export async function PunchmoleServer(port, apiKeys) {
     })
 
     app.use((req, res, next) => {
-        const requestedDomain = req.headers.host.match(/^(.*?)(:|)/)[1]
+        const requestedDomain = req.headers.host.match(/^(.*?)(:[0-9]{1,}|)$/)[1]
         const foreignHost = domainsToConnections[requestedDomain]
         console.debug(new Date(), 'request started for', requestedDomain, req.method, req.url)
         if(foreignHost && foreignHost.status === 'alive') {
