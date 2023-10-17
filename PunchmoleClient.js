@@ -65,11 +65,13 @@ export function PunchmoleClient(apiKey, domain, targetUrl, endpointUrl) {
                 console.log(new Date(), 'forwarding url', JSON.stringify(url))
 
                 requests[request.id] = {
+                    responseStarted: false,
                     request: http.request(url, {
                         method: request.method,
                         headers: request.headers,
                         signal: controllers[request.id].controller.signal
                     }, (response) => {
+                        requests[request.id].responseStarted = true
                         ws.send(JSON.stringify({
                             type: 'response-start',
                             id: request.id,
@@ -99,6 +101,29 @@ export function PunchmoleClient(apiKey, domain, targetUrl, endpointUrl) {
                         }, { once: true })
                     })
                 }
+                requests[request.id].request.on('error', (err) => {
+                    console.log(new Date(), 'request error', request.id, err);
+                    if(requests[request.id].responseStarted === false) {
+                        ws.send(JSON.stringify({
+                            type: 'response-start',
+                            id: request.id,
+                            statusCode: 503,
+                            statusMessage: 'Service Unavailable',
+                            headers: {}
+                        }))
+                        ws.send(JSON.stringify({
+                            type: 'data',
+                            id: request.id,
+                            data: err.toString('binary')
+                        }))
+                    }
+                    ws.send(JSON.stringify({
+                        type: 'data-end',
+                        id: request.id
+                    }))
+                    requests[request.id].request.destroy()
+                    delete requests[request.id]
+                })
                 eventEmitter.emit('request', request)
                 break
             case 'request-data':
