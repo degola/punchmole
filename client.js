@@ -1,11 +1,17 @@
 #!/usr/bin/env node
+import 'dotenv/config'
 
 import { PunchmoleClient } from "./app.js";
 
-const PUNCHMOLE_ENDPOINT_URL = process.env.PUNCHMOLE_ENDPOINT_URL || 'ws://localhost:10000/client'
+const PUNCHMOLE_ENDPOINT_URL = process.env.PUNCHMOLE_ENDPOINT_URL || 'ws://localhost:10000/_punchmole'
 const PUNCHMOLE_API_KEY = process.env.PUNCHMOLE_API_KEY
 const DOMAIN = process.env.DOMAIN
 const TARGET_URL = process.env.TARGET_URL || 'http://localhost:3000'
+
+if(!DOMAIN) {
+    console.error('please specify a domain by using environment variable DOMAIN')
+    process.exit(1)
+}
 
 function wait(ms) {
     return new Promise(r => setTimeout(r, ms));

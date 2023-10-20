@@ -10,6 +10,7 @@ The project has 2 components:
 - **Server:** deployable on a server, behind a reverse proxy connects to the outside world and any domain it is accessible from
 
 This service allows streaming of origin request (e.g. file-uploads, other than Tunnelmole which buffers request data completely in memory).
+The service also supports Websocket proxying depending on websocket endpoint url path
 
 Client & Server are both solely configurable via ENV-variables.
 
@@ -18,8 +19,7 @@ Client & Server are both solely configurable via ENV-variables.
 This project is experimental and currently used for some pet-projects, quickly hacked together in a few hours.
 
 Well-known issues:
-- no websocket support, yet...
-- no error handling
+- almost no error handling
 - no tests
 
 ## Server
@@ -31,10 +31,11 @@ client connection which can ultimately serve the request.
 
 ### Environment variables
 
-| Variable | Default Value | Description                                                           |
-|----------|---------------|-----------------------------------------------------------------------|
-| PORT     | 10000         | HTTP port on which the server listens                                 |
-| API_KEYS | n/a           | A comma-separated list of API keys the server accepts connections for |
+| Variable | Default Value | Description                                                                                                                                                                          |
+|----------|---------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| PORT     | 10000         | HTTP port on which the server listens                                                                                                                                                |
+| API_KEYS | n/a           | A comma-separated list of API keys the server accepts connections for                                                                                                                |
+| PUNCHMOLE_ENDPOINT_URL_PATH | /_punchmole   | A WebSocket URL path which is used to determine if the incoming connection is for punchmole to register and connect a punchmole client or a user request which needs to be forwarded |
 
 
 ### Installation
@@ -46,6 +47,7 @@ npm install -g punchmole
 ```bash
 PORT=10000 \
 API_KEYS=api-key1,api-key2,random-string-nobody-can-guess \
+PUNCHMOLE_ENDPOINT_URL_PATH=/_punchmole \
 punchmole-server 
 ```
 
@@ -53,6 +55,20 @@ punchmole-server
 ```bash
 docker build -t punchmole .
 docker run -e API_KEYS=api-key1,api-key2,random-string-nobody-can-guess punchmole
+```
+
+### Usage in own Node code
+
+The server can also easily get used in your own project:
+```javascript
+import { PunchmoleServer } from "punchmole";
+
+PunchmoleServer(
+    PORT, // port number to listen on
+    API_KEYS, // array of api keys (random strings)
+    PUNCHMOLE_ENDPOINT_URL_PATH, // /_punchmole is the default path
+    console // console, {info: {}, debug: {}, error: {}} for no logs or e.g. an instance of log4js
+)
 ```
 
 ## Client
@@ -63,12 +79,12 @@ to receive requests for.
 
 ### Environment variables
 
-| Variable               | Default Value               | Description                                                                                     |
-|------------------------|-----------------------------|-------------------------------------------------------------------------------------------------|
-| PUNCHMOLE_API_KEY      | n/a                         | An API-key the server accepts                                                                   |
-| DOMAIN                 | n/a                         | The domain the client wants to receive requests for                                             |
-| TARGET_URL             | http://localhost:3000       | URL to which the incoming requests are forwarded to, either local or within the private network |
-| PUNCHMOLE_ENDPOINT_URL | ws://localhost:10000/client | Websocket URL of the Punchmole server                                                           |
+| Variable               | Default Value                   | Description                                                                                                                                  |
+|------------------------|---------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| PUNCHMOLE_API_KEY      | n/a                             | An API-key the server accepts                                                                                                                |
+| DOMAIN                 | n/a                             | The domain the client wants to receive requests for                                                                                          |
+| TARGET_URL             | http://localhost:3000           | URL to which the incoming requests are forwarded to, either local or within the private network                                              |
+| PUNCHMOLE_ENDPOINT_URL | ws://localhost:10000/_punchmole | Websocket URL of the Punchmole server, make sure if you want to change /_punchmole to adjust `PUNCHMOLE_ENDPOINT_URL_PATH` in punchmole server |
 
 ### Installation
 ```bash
@@ -77,7 +93,7 @@ npm install -g punchmole
 
 ### Run
 ```bash
-PUNCHMOLE_ENDPOINT_URL=ws://localhost:10000/client \
+PUNCHMOLE_ENDPOINT_URL=ws://localhost:10000/_punchmole \
 TARGET_URL=http://localhost:3000 \
 API_KEY=api-key1 \
 DOMAIN=testdomain.com \

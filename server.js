@@ -1,9 +1,11 @@
 #!/usr/bin/env node
+import 'dotenv/config'
 
 import { PunchmoleServer } from "./app.js";
 
 const PORT = process.env.PORT || 10000
 const API_KEYS = (process.env.API_KEYS || "").split(',')
+const PUNCHMOLE_ENDPOINT_URL_PATH = process.env.PUNCHMOLE_ENDPOINT_URL_PATH || '/_punchmole'
 
 if(API_KEYS.filter((v) => v !== "").length === 0) {
     const args = process.argv
@@ -13,4 +15,4 @@ if(API_KEYS.filter((v) => v !== "").length === 0) {
     process.exit(1)
 }
 
-PunchmoleServer(PORT, API_KEYS)
+PunchmoleServer(PORT, API_KEYS, PUNCHMOLE_ENDPOINT_URL_PATH, console)
