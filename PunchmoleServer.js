@@ -7,7 +7,12 @@ function generateRandomId() {
     return crypto.randomBytes(16).toString("hex")
 }
 
-export async function PunchmoleServer(port, apiKeys, endpointUrlPath = '/_punchmole', log = console) {
+export async function PunchmoleServer(
+    port,
+    apiKeys,
+    endpointUrlPath = '/_punchmole',
+    log = console
+) {
     if(apiKeys.filter((v) => v !== "").length === 0) {
         throw new Error('invalid api keys, please check apiKeys argument')
     }
@@ -79,7 +84,11 @@ export async function PunchmoleServer(port, apiKeys, endpointUrlPath = '/_punchm
                         if (request) {
                             const data = Buffer.from(message.data, 'binary')
                             // log.debug(new Date(), 'writing response data to request', message.id, data.length)
-                            request.responseObject.write(data)
+                            try {
+                                request.responseObject.write(data)
+                            } catch(e) {
+                                log.info(new Date(), 'error writing data to response object, request was probably aborted', message.id, e)
+                            }
                         } else {
                             log.error(new Date(), 'didnt found response object, unable to send data', message.id)
                         }
@@ -94,7 +103,11 @@ export async function PunchmoleServer(port, apiKeys, endpointUrlPath = '/_punchm
                         break
                     case 'websocket-connection-closed':
                         if(openWebsocketConnections[message.id]) {
-                            openWebsocketConnections[message.id].close()
+                            try {
+                                openWebsocketConnections[message.id].close()
+                            } catch(e) {
+                                log.info(new Date(), 'error closing websocket connection, probably already closed', message.id, e)
+                            }
                         }
                         break
                     case 'websocket-message':
