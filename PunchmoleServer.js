@@ -174,7 +174,7 @@ export async function PunchmoleServer(
     app.use((req, res) => {
         const requestedDomain = req.headers.host.match(/^(.*?)(:[0-9]{1,}|)$/)[1]
         const foreignHost = domainsToConnections[requestedDomain]
-        log.debug(new Date(), 'request started for', requestedDomain, req.method, req.url)
+        log.debug(new Date(), 'request started for', requestedDomain, req.method, req.url, req)
         if(foreignHost && foreignHost.status === 'alive') {
             log.debug(new Date(), '-> found endpoint', req.url, req.headers, req.body)
             const requestForward = {
