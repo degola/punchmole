@@ -37,12 +37,6 @@ deploy_production:
     - job: build
       artifacts: true
   script:
-    ###
-    # get gitlab release-cli to create a release
-    - echo "preparing for release $VERSION"
-    - wget https://gitlab.com/gitlab-org/release-cli/-/package_files/27206485/download -O /usr/local/bin/release-cli
-    - chmod +x /usr/local/bin/release-cli
-    ###
     - echo "Deploy to production"
     - apk update && apk add gettext
     - envsubst < $DEPLOYMENT_MANIFEST_PATH
@@ -53,13 +47,3 @@ deploy_production:
     name: tools
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-  release:
-    name: "Release $CI_COMMIT_SHA"
-    description: "automatic release"  # $EXTRA_DESCRIPTION and the $VERSION
-    tag_name: "$CI_COMMIT_SHA"                                                 # variables must be defined elsewhere
-    ref: "$CI_COMMIT_SHA"                                            # in the pipeline. For example, in the
-    assets:
-      links:
-        - name: "Docker Container Image"
-          url: "https://$CI_REGISTRY_IMAGE:$VERSION"
-
