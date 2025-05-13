@@ -7,7 +7,7 @@ export function PunchmoleClient(apiKey, domain, targetUrl, endpointUrl, log = co
     const ws = new WebSocket(endpointUrl)
 
     ws.on('open', () => {
-        log.info(new Date(), 'connection with upstream server opened to forward url', targetUrl)
+        log.info(new Date(), 'connection with upstream server opened to forward public url', domain, 'to local url', targetUrl)
         ws.send(JSON.stringify({'type': 'register', 'domain': domain, 'apiKey': apiKey}))
         ws.isAlive = true
     })
@@ -15,7 +15,13 @@ export function PunchmoleClient(apiKey, domain, targetUrl, endpointUrl, log = co
         ws.ping()
     }, 10000)
     ws.on('ping', () => {
-        ws.pong()
+        log.debug('ping', ws.readyState);
+        // it can happen that we receive a ping but the connection breaks in between
+        try {
+            ws.pong()
+        } catch(e) {
+            // we ignore the error for ws.pong()
+        }
     })
     ws.on('pong', () => {
     })
@@ -42,7 +48,7 @@ export function PunchmoleClient(apiKey, domain, targetUrl, endpointUrl, log = co
                 websocketConnections[message.request.id] &&
                 websocketConnections[message.request.id].readyState === WebSocket.OPEN
             ) {
-                log.info('sending buffered message to finally opened websocket connection', message)
+                log.debug('sending buffered message to finally opened websocket connection', message)
                 websocketConnections[message.request.id].send(message.request.rawData)
                 websocketMessageBuffer = websocketMessageBuffer.filter((v) => v.request.id !== message.request.id)
             }
@@ -79,8 +85,7 @@ export function PunchmoleClient(apiKey, domain, targetUrl, endpointUrl, log = co
             case 'request-start':
                 controllers[request.id] = {date: new Date(), controller: new AbortController()}
                 const url = targetUrl + request.url
-                log.info(new Date(), 'received request', JSON.stringify(request))
-                log.debug(new Date(), 'forwarding url', JSON.stringify(url))
+                log.debug(new Date(), 'received request', JSON.stringify(request))
 
                 requests[request.id] = {
                     responseStarted: false,
@@ -90,6 +95,7 @@ export function PunchmoleClient(apiKey, domain, targetUrl, endpointUrl, log = co
                         signal: controllers[request.id].controller.signal
                     }, (response) => {
                         requests[request.id].responseStarted = true
+                        log.info(new Date(), 'request', request.headers['x-original-forwarded-for'], request.method, JSON.stringify(url), response.statusCode, JSON.stringify(response.statusMessage))
                         ws.send(JSON.stringify({
                             type: 'response-start',
                             id: request.id,
@@ -112,7 +118,7 @@ export function PunchmoleClient(apiKey, domain, targetUrl, endpointUrl, log = co
                             }))
                         })
                         controllers[request.id].controller.signal.addEventListener('abort', () => {
-                            log.info(new Date(), 'ending stream, remote client closed connection', request.id)
+                            log.debug(new Date(), 'ending stream, remote client closed connection', request.id)
                             response.destroy()
                         }, { once: true })
                     })

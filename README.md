@@ -79,12 +79,13 @@ to receive requests for.
 
 ### Environment variables
 
-| Variable               | Default Value                   | Description                                                                                                                                  |
-|------------------------|---------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
-| PUNCHMOLE_API_KEY      | n/a                             | An API-key the server accepts                                                                                                                |
-| DOMAIN                 | n/a                             | The domain the client wants to receive requests for                                                                                          |
-| TARGET_URL             | http://localhost:3000           | URL to which the incoming requests are forwarded to, either local or within the private network                                              |
+| Variable               | Default Value                   | Description                                                                                                                                    |
+|------------------------|---------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------|
+| PUNCHMOLE_API_KEY      | n/a                             | An API-key the server accepts                                                                                                                  |
+| DOMAIN                 | n/a                             | The domain the client wants to receive requests for                                                                                            |
+| TARGET_URL             | http://localhost:3000           | URL to which the incoming requests are forwarded to, either local or within the private network                                                |
 | PUNCHMOLE_ENDPOINT_URL | ws://localhost:10000/_punchmole | Websocket URL of the Punchmole server, make sure if you want to change /_punchmole to adjust `PUNCHMOLE_ENDPOINT_URL_PATH` in punchmole server |
+| DEBUG                  | ***empty***                     | Set to true (DEBUG=true) to enable detailed request logging                                                                                    |
 
 ### Installation
 ```bash
@@ -97,6 +98,7 @@ PUNCHMOLE_ENDPOINT_URL=ws://localhost:10000/_punchmole \
 TARGET_URL=http://localhost:3000 \
 API_KEY=api-key1 \
 DOMAIN=testdomain.com \
+DEBUG=true \
 punchmole
 ```
 
@@ -110,7 +112,8 @@ const punchmoleEvents = PunchmoleClient(
     "API KEY",
     "DOMAIN",
     "TARGET URL",
-    "PUNCHMOLE ENDPOINT URL"
+    "PUNCHMOLE ENDPOINT URL",
+    console // console, {info: {}, debug: {}, error: {}, warn: {}} for no logs or e.g. an instance of log4js
 )
 punchmoleEvents.addListener("registered", (result) => console.log(result))
 punchmoleEvents.addListener("request", (result) => console.log(result))
