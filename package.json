@@ -31,7 +31,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/degola/punchmole"
+    "url": "git+https://github.com/degola/punchmole.git"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"

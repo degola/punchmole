@@ -16,11 +16,9 @@ Client & Server are both solely configurable via ENV-variables.
 
 ## Status
 
-This project is experimental and currently used for some pet-projects, quickly hacked together in a few hours.
+This project has been experimental for quite a while but I have used it extensively for heavy-duty websocket applications as well as larger webapps developped and even partially deployed to a larger audience without issues.
 
-Well-known issues:
-- almost no error handling
-- no tests
+I deployed the punchmole server on Kubernetes with 20 replicas with thousands of requests per second.
 
 ## Server
 
