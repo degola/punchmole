@@ -3,16 +3,20 @@ import { WebSocket } from 'ws'
 import http from 'node:http'
 
 export function PunchmoleClient(apiKey, domain, targetUrl, endpointUrl, log = console) {
-    const eventEmitter = new EventEmitter()
-    const ws = new WebSocket(endpointUrl)
+    const eventEmitter = new EventEmitter();
+    const ws = new WebSocket(endpointUrl);
 
     ws.on('open', () => {
-        log.info(new Date(), 'connection with upstream server opened to forward public url', domain, 'to local url', targetUrl)
-        ws.send(JSON.stringify({'type': 'register', 'domain': domain, 'apiKey': apiKey}))
-        ws.isAlive = true
+        log.info(new Date(), 'connection with upstream server opened to forward public url', domain, 'to local url', targetUrl);
+        ws.send(JSON.stringify({'type': 'register', 'domain': domain, 'apiKey': apiKey}));
+        ws.isAlive = true;
     })
-    const interval = setInterval(() => {
-        ws.ping()
+    const interval = setInterval(async () => {
+        try {
+            await ws.ping();
+        } catch(e) {
+            log.error(new Date(), 'error while sending ping to upstream server', e);
+        }
     }, 10000)
     ws.on('ping', () => {
         log.debug('ping', ws.readyState);
