@@ -64,7 +64,9 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/proxy-send-timeout: "360s"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "360s"
-    nginx.ingress.kubernetes.io/use-forwarded-headers: "true"
+    nginx.ingress.kubernetes.io/use-forwarded-headers: "true" # Ensure forwarded headers are used
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "false"  # Disable forced HTTPS redirection
+    nginx.ingress.kubernetes.io/ssl-passthrough: "true"      # Enable SSL passthrough
 spec:
   rules:
     - host: "*.${PUNCHMOLE_DOMAIN}"
@@ -87,7 +89,9 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/proxy-send-timeout: "360s"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "360s"
-    nginx.ingress.kubernetes.io/use-forwarded-headers: "true"
+    nginx.ingress.kubernetes.io/use-forwarded-headers: "true" # Ensure forwarded headers are used
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "false"  # Disable forced HTTPS redirection
+    nginx.ingress.kubernetes.io/ssl-passthrough: "true"      # Enable SSL passthrough
 spec:
   rules:
     - host: "*.${PUNCHMOLE_SECONDARY_DOMAIN}"
@@ -110,7 +114,9 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/proxy-send-timeout: "360s"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "360s"
-    nginx.ingress.kubernetes.io/use-forwarded-headers: "true"
+    nginx.ingress.kubernetes.io/use-forwarded-headers: "true" # Ensure forwarded headers are used
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "false"  # Disable forced HTTPS redirection
+    nginx.ingress.kubernetes.io/ssl-passthrough: "true"      # Enable SSL passthrough
 spec:
   rules:
     - host: "*.${PUNCHMOLE_THIRD_DOMAIN}"
@@ -133,7 +139,9 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/proxy-send-timeout: "360s"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "360s"
-    nginx.ingress.kubernetes.io/use-forwarded-headers: "true"
+    nginx.ingress.kubernetes.io/use-forwarded-headers: "true" # Ensure forwarded headers are used
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "false"  # Disable forced HTTPS redirection
+    nginx.ingress.kubernetes.io/ssl-passthrough: "true"      # Enable SSL passthrough
 spec:
   rules:
     - host: "*.${PUNCHMOLE_FOURTH_DOMAIN}"
