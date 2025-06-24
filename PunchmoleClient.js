@@ -137,11 +137,19 @@ export function PunchmoleClient(apiKey, domain, targetUrl, endpointUrl, log = co
                             statusMessage: 'Service Unavailable',
                             headers: {}
                         }))
-                        ws.send(JSON.stringify({
-                            type: 'data',
-                            id: request.id,
-                            data: err.toString('binary')
-                        }))
+                        if(err.code === 'ECONNREFUSED') {
+                            ws.send(JSON.stringify({
+                                type: 'data',
+                                id: request.id,
+                                data: `remote service not available, check configuration/target url: ${err.code}`
+                            }));
+                        } else {
+                            ws.send(JSON.stringify({
+                                type: 'data',
+                                id: request.id,
+                                data: `${err.toString('binary')} (${err.code})`
+                            }));
+                        }
                     }
                     ws.send(JSON.stringify({
                         type: 'data-end',
