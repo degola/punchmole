@@ -1,6 +1,6 @@
 {
   "name": "punchmole",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "description": "A simple reverse proxy tunnel service which is easy deployable and can be easily customised and used with nodejs code",
   "main": "app.js",
   "type": "module",
