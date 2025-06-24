@@ -134,7 +134,7 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: punchmole-server-third-domain
+  name: punchmole-server-fourth-domain
   namespace: ${ENVIRONMENT}
   annotations:
     nginx.ingress.kubernetes.io/proxy-send-timeout: "360s"
@@ -159,7 +159,7 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: punchmole-server-third-domain
+  name: punchmole-server-fifth-domain
   namespace: ${ENVIRONMENT}
   annotations:
     nginx.ingress.kubernetes.io/proxy-send-timeout: "360s"

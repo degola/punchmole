@@ -179,7 +179,9 @@ export function PunchmoleClient(apiKey, domain, targetUrl, endpointUrl, log = co
                 log.info(new Date(), 'new websocket connection requested', request, targetUrl)
                 const websocketConnectionUrl = targetUrl.replace(/^http/, 'ws') + request.url
                 log.debug(new Date(), '-> opening websocket connection...', websocketConnectionUrl)
-                websocketConnections[request.id] = new WebSocket(websocketConnectionUrl)
+                websocketConnections[request.id] = new WebSocket(websocketConnectionUrl, {
+                    headers: request.headers
+                })
                 websocketConnections[request.id].on('message', (rawData) => {
                     ws.send(JSON.stringify({
                         type: 'websocket-message',
