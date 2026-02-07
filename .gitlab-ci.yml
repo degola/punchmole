@@ -1,6 +1,5 @@
 image:
   name: docker:dind
-  pull_policy: if-not-present
 
 stages:
   - build
@@ -12,9 +11,6 @@ variables:
 
 # this command will be run before every script
 default:
-  image: docker:20-git
-  services:
-    - docker:20-dind
   before_script:
     - export VERSION=v`date +%Y%m%d`-`echo "$CI_COMMIT_SHA" | head -c7`
     - export CI_REGISTRY_FULL_IMAGE="$CI_REGISTRY_IMAGE:$VERSION"
