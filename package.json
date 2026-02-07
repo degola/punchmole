@@ -17,8 +17,8 @@
     "local tunnel"
   ],
   "scripts": {
-    "server": "node --env-file=.env server.js",
-    "client": "node --env-file=.env client.js",
+    "server": "node server.js",
+    "client": "node client.js",
     "server-dev": "node --watch --env-file=.env server.js",
     "client-dev": "node --watch --env-file=.env client.js"
   },
