@@ -1,6 +1,6 @@
 {
   "name": "punchmole",
-  "version": "1.1.7",
+  "version": "1.1.8",
   "description": "A simple reverse proxy tunnel service which is easy deployable and can be easily customised and used with nodejs code",
   "main": "app.js",
   "type": "module",
@@ -17,26 +17,21 @@
     "local tunnel"
   ],
   "scripts": {
-    "server": "node server.js",
-    "client": "node client.js",
-    "server-dev": "nodemon server.js",
-    "client-dev": "nodemon client.js"
+    "server": "node --env-file=.env server.js",
+    "client": "node --env-file=.env client.js",
+    "server-dev": "node --watch --env-file=.env server.js",
+    "client-dev": "node --watch --env-file=.env client.js"
   },
   "author": "Sebastian Lagemann <sebastian@gomsilo.com>",
   "license": "GPLv2",
   "dependencies": {
-    "dotenv": "^16.3.1",
-    "express": "^4.19.2",
     "ws": "^8.14.2"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/degola/punchmole.git"
   },
-  "devDependencies": {
-    "nodemon": "^3.0.1"
-  },
   "engines": {
-    "node": ">=19.0.0"
+    "node": ">=20.6.0"
   }
 }

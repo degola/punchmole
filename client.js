@@ -1,6 +1,4 @@
 #!/usr/bin/env node
-import 'dotenv/config'
-
 import { PunchmoleClient } from "./app.js";
 
 const PUNCHMOLE_ENDPOINT_URL = process.env.PUNCHMOLE_ENDPOINT_URL || 'ws://localhost:10000/_punchmole'

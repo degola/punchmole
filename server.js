@@ -1,6 +1,4 @@
 #!/usr/bin/env node
-import 'dotenv/config'
-
 import { PunchmoleServer } from "./app.js";
 
 const PORT = process.env.PORT || 10000
