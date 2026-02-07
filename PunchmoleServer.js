@@ -25,13 +25,6 @@ export async function PunchmoleServer(
         throw new Error('invalid api keys, please check apiKeys argument')
     }
     const server = http.createServer((req, res) => {
-        const pathname = getPathname(req)
-        if (pathname === "/") {
-            res.writeHead(200, { "Content-Type": "text/plain" })
-            res.end("http server is running")
-            return
-        }
-
         const requestedDomain = req.headers.host?.match(/^(.*?)(:[0-9]{1,}|)$/)?.[1]
         if (!requestedDomain) {
             res.writeHead(400, { "Content-Type": "text/plain" })
@@ -74,8 +67,14 @@ export async function PunchmoleServer(
                 }))
             })
         } else {
-            res.writeHead(503, { "Content-Type": "text/plain" })
-            res.end("no registration for domain and/or remote service not available")
+            const pathname = getPathname(req)
+            if (pathname === "/") {
+                res.writeHead(200, { "Content-Type": "text/plain" })
+                res.end("http server is running")
+            } else {
+                res.writeHead(503, { "Content-Type": "text/plain" })
+                res.end("no registration for domain and/or remote service not available")
+            }
         }
     })
     server.on('upgrade', (request, socket) => {
