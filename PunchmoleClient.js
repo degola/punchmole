@@ -227,5 +227,8 @@ export function PunchmoleClient(apiKey, domain, targetUrl, endpointUrl, log = co
                 }
         }
     })
+    eventEmitter.close = function close() {
+        ws.close()
+    }
     return eventEmitter
 }
