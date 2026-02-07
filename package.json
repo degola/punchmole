@@ -26,6 +26,7 @@
   "license": "GPLv2",
   "dependencies": {
     "dotenv": "^16.3.1",
+    "express": "^4.19.2",
     "ws": "^8.14.2"
   },
   "repository": {

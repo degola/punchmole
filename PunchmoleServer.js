@@ -1,18 +1,10 @@
 import crypto from "node:crypto";
+import express from "express";
 import http from "node:http";
 import {WebSocketServer} from "ws";
 
 function generateRandomId() {
     return crypto.randomBytes(16).toString("hex")
-}
-
-function getPathname(req) {
-    try {
-        const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`)
-        return url.pathname
-    } catch {
-        return "/"
-    }
 }
 
 export async function PunchmoleServer(
@@ -24,59 +16,8 @@ export async function PunchmoleServer(
     if(apiKeys.filter((v) => v !== "").length === 0) {
         throw new Error('invalid api keys, please check apiKeys argument')
     }
-    const server = http.createServer((req, res) => {
-        const requestedDomain = req.headers.host?.match(/^(.*?)(:[0-9]{1,}|)$/)?.[1]
-        if (!requestedDomain) {
-            res.writeHead(400, { "Content-Type": "text/plain" })
-            res.end("missing Host header")
-            return
-        }
-
-        const foreignHost = domainsToConnections[requestedDomain]
-        log.debug(new Date(), 'request started for', requestedDomain, req.method, req.url)
-        if(foreignHost && foreignHost.status === 'alive') {
-            log.debug(new Date(), '-> found endpoint', req.url, req.headers)
-            const requestForward = {
-                type: "request-start",
-                date: new Date(),
-                domain: requestedDomain,
-                id: generateRandomId(),
-                method: req.method,
-                url: req.url,
-                headers: req.headers,
-                body: undefined,
-            }
-            log.debug(new Date(), '-> forward to remote client', JSON.stringify(requestForward))
-            openRequests.push({...requestForward, requestObject: req, responseObject: res})
-            foreignHost.socket.send(JSON.stringify(requestForward))
-            req.on('data', (data) => {
-                log.debug(new Date(), '--> request data received', requestForward.id, data.length)
-                foreignHost.socket.send(JSON.stringify({
-                    type: 'request-data',
-                    date: new Date(),
-                    id: requestForward.id,
-                    data: data.toString('binary')
-                }))
-            })
-            req.on('end', () => {
-                log.debug(new Date(), '--> request data reception ended', requestForward.id)
-                foreignHost.socket.send(JSON.stringify({
-                    type: 'request-data-end',
-                    date: new Date(),
-                    id: requestForward.id
-                }))
-            })
-        } else {
-            const pathname = getPathname(req)
-            if (pathname === "/") {
-                res.writeHead(200, { "Content-Type": "text/plain" })
-                res.end("http server is running")
-            } else {
-                res.writeHead(503, { "Content-Type": "text/plain" })
-                res.end("no registration for domain and/or remote service not available")
-            }
-        }
-    })
+    const app = express()
+    const server = http.createServer(app)
     server.on('upgrade', (request, socket) => {
         socket.headers = request.headers
         socket.origin_url = request.url
@@ -127,13 +68,10 @@ export async function PunchmoleServer(
                     case 'response-start':
                         log.info(new Date(), 'response start, request id', message.id, message.headers)
                         if (request) {
-                            const res = request.responseObject
-                            res.statusCode = message.statusCode
-                            res.statusMessage = message.statusMessage || ''
-                            for (const [key, value] of Object.entries(message.headers)) {
-                                res.setHeader(key, value)
-                            }
-                            res.on('close', () => {
+                            request.responseObject.status(message.statusCode)
+                            request.responseObject.statusMessage = message.statusMessage
+                            request.responseObject.set(message.headers)
+                            request.responseObject.on('close', () => {
                                 log.info(new Date(), 'connection closed, stop sending data', message.id)
                                 openRequests = openRequests.filter((v) => v.id !== message.id)
                                 socket.send(JSON.stringify({type: 'request-end', id: message.id}))
@@ -166,7 +104,7 @@ export async function PunchmoleServer(
                     case 'websocket-connection-closed':
                         if(openWebsocketConnections[message.id]) {
                             try {
-                                openWebsocketConnections[message.id].socket.close()
+                                openWebsocketConnections[message.id].close()
                             } catch(e) {
                                 log.info(new Date(), 'error closing websocket connection, probably already closed', message.id, e)
                             }
@@ -233,11 +171,58 @@ export async function PunchmoleServer(
         }
     })
 
+    app.use((req, res) => {
+        const requestedDomain = req.headers.host.match(/^(.*?)(:[0-9]{1,}|)$/)[1]
+        const foreignHost = domainsToConnections[requestedDomain]
+        log.debug(new Date(), 'request started for', requestedDomain, req.method, req.url)
+        if(foreignHost && foreignHost.status === 'alive') {
+            log.debug(new Date(), '-> found endpoint', req.url, req.headers, req.body)
+            const requestForward = {
+                type: "request-start",
+                date: new Date(),
+                domain: requestedDomain,
+                id: generateRandomId(),
+                method: req.method,
+                url: req.url,
+                headers: req.headers,
+                body: req.body,
+            }
+            log.debug(new Date(), '-> forward to remote client', JSON.stringify(requestForward))
+            openRequests.push({...requestForward, requestObject: req, responseObject: res})
+            foreignHost.socket.send(JSON.stringify(requestForward))
+            req.on('data', (data) => {
+                log.debug(new Date(), '--> request data received', requestForward.id, data.length)
+                foreignHost.socket.send(JSON.stringify({
+                    type: 'request-data',
+                    date: new Date(),
+                    id: requestForward.id,
+                    data: data.toString('binary')
+                }))
+            })
+            req.on('end', () => {
+                log.debug(new Date(), '--> request data reception ended', requestForward.id)
+                foreignHost.socket.send(JSON.stringify({
+                    type: 'request-data-end',
+                    date: new Date(),
+                    id: requestForward.id
+                }))
+            })
+        } else {
+            res.status(503)
+            res.send("no registration for domain and/or remote service not available")
+        }
+    })
+    app.get('/', (req, res) => {
+        res.send('http server is running')
+    })
+
+
     server.listen(port, () => {
         log.info(new Date(), `server is listening on port ${port}`)
     })
 
     return {
+        app,
         server,
         wss
     }
