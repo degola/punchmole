@@ -1,6 +1,5 @@
 image:
   name: docker:dind
-  pull_policy: if-not-present
 
 stages:
   - build
