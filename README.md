@@ -10,7 +10,9 @@ The project has 2 components:
 - **Server:** deployable on a server, behind a reverse proxy connects to the outside world and any domain it is accessible from
 
 This service allows streaming of origin request (e.g. file-uploads, other than Tunnelmole which buffers request data completely in memory).
-The service also supports Websocket proxying depending on websocket endpoint url path
+The service also supports Websocket proxying depending on websocket endpoint url path.
+
+**Next.js hot reload / HMR is fully supported.** Punchmole correctly forwards WebSocket text and binary frames (including Next.js `/_next/hmr` and `/_next/webpack-hmr`) and preserves subprotocols, so `next dev` works through the public tunnel the same way it does on localhost.
 
 Client & Server are both solely configurable via ENV-variables.
 

@@ -6,6 +6,21 @@ function generateRandomId() {
     return crypto.randomBytes(16).toString("hex")
 }
 
+function encodeWebsocketPayload(rawData) {
+    return Buffer.from(rawData).toString("base64")
+}
+
+function decodeWebsocketPayload(rawData) {
+    // Backward compatible with older clients that forwarded Buffer JSON / raw strings
+    if (typeof rawData === "string") {
+        return Buffer.from(rawData, "base64")
+    }
+    if (rawData && rawData.type === "Buffer" && Array.isArray(rawData.data)) {
+        return Buffer.from(rawData.data)
+    }
+    return Buffer.from(rawData || "")
+}
+
 export async function PunchmoleServer(
     port,
     apiKeys,
@@ -72,7 +87,7 @@ export async function PunchmoleServer(
 
     const domainsToConnections = {}
     let openRequests = []
-    let openWebsocketConnections = []
+    let openWebsocketConnections = {}
     function getRequestObject(id) {
         return openRequests.find((v) => v.id === id)
     }
@@ -160,7 +175,11 @@ export async function PunchmoleServer(
                         const userSocket = openWebsocketConnections[message.id]
                         if(userSocket) {
                             log.debug(new Date(), 'sending websocket message received from proxied service to client', message.id)
-                            userSocket.socket.send(message.rawData)
+                            // Preserve text vs binary opcode. Next.js HMR sets binaryType=arraybuffer and
+                            // parses ArrayBuffer via a binary protocol; JSON text must stay text frames.
+                            userSocket.socket.send(decodeWebsocketPayload(message.rawData), {
+                                binary: !!message.isBinary
+                            })
                         }
                         break
                 }
@@ -205,12 +224,13 @@ export async function PunchmoleServer(
                     openWebsocketConnections[socket.connectionId].socket.close()
                     delete openWebsocketConnections[socket.connectionId]
                 })
-                socket.on('message', (rawData) => {
+                socket.on('message', (rawData, isBinary) => {
                     log.info(new Date(), 'received data from client websocket connection, forwarding...', socket.connectionId)
                     foreignHost.socket.send(JSON.stringify({
                         type: 'websocket-message',
                         id: socket.connectionId,
-                        rawData: rawData
+                        rawData: encodeWebsocketPayload(rawData),
+                        isBinary
                     }))
                 })
             }
