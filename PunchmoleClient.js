@@ -2,6 +2,59 @@ import { EventEmitter } from 'node:events'
 import { WebSocket } from 'ws'
 import http from 'node:http'
 
+const WEBSOCKET_HANDSHAKE_HEADERS = new Set([
+    'connection',
+    'upgrade',
+    'host',
+    'content-length',
+    'transfer-encoding',
+    'keep-alive',
+    'proxy-connection',
+    'proxy-authenticate',
+    'proxy-authorization',
+    'te',
+    'trailer',
+    'sec-websocket-key',
+    'sec-websocket-version',
+    'sec-websocket-extensions',
+    'sec-websocket-accept',
+    'sec-websocket-protocol',
+])
+
+function encodeWebsocketPayload(rawData) {
+    return Buffer.from(rawData).toString('base64')
+}
+
+function decodeWebsocketPayload(rawData) {
+    // Backward compatible with older servers that forwarded Buffer JSON / raw strings
+    if (typeof rawData === 'string') {
+        return Buffer.from(rawData, 'base64')
+    }
+    if (rawData && rawData.type === 'Buffer' && Array.isArray(rawData.data)) {
+        return Buffer.from(rawData.data)
+    }
+    return Buffer.from(rawData || '')
+}
+
+function buildUpstreamWebsocketOptions(headers = {}) {
+    const upstreamHeaders = {}
+    let protocols
+    for (const [key, value] of Object.entries(headers)) {
+        const lowerKey = key.toLowerCase()
+        if (lowerKey === 'sec-websocket-protocol') {
+            protocols = String(value)
+                .split(',')
+                .map((protocol) => protocol.trim())
+                .filter(Boolean)
+            continue
+        }
+        if (!WEBSOCKET_HANDSHAKE_HEADERS.has(lowerKey)) {
+            upstreamHeaders[key] = value
+        }
+    }
+    return { protocols, headers: upstreamHeaders }
+}
+
 export function PunchmoleClient(apiKey, domain, targetUrl, endpointUrl, log = console) {
     const eventEmitter = new EventEmitter();
     const ws = new WebSocket(endpointUrl);
@@ -53,7 +106,10 @@ export function PunchmoleClient(apiKey, domain, targetUrl, endpointUrl, log = co
                 websocketConnections[message.request.id].readyState === WebSocket.OPEN
             ) {
                 log.debug('sending buffered message to finally opened websocket connection', message)
-                websocketConnections[message.request.id].send(message.request.rawData)
+                websocketConnections[message.request.id].send(
+                    decodeWebsocketPayload(message.request.rawData),
+                    { binary: !!message.request.isBinary }
+                )
                 websocketMessageBuffer = websocketMessageBuffer.filter((v) => v.request.id !== message.request.id)
             }
         }
@@ -178,15 +234,25 @@ export function PunchmoleClient(apiKey, domain, targetUrl, endpointUrl, log = co
             case 'websocket-connection':
                 log.info(new Date(), 'new websocket connection requested', request, targetUrl)
                 const websocketConnectionUrl = targetUrl.replace(/^http/, 'ws') + request.url
-                log.debug(new Date(), '-> opening websocket connection...', websocketConnectionUrl)
-                websocketConnections[request.id] = new WebSocket(websocketConnectionUrl, {
-                    headers: request.headers
+                const upstream = buildUpstreamWebsocketOptions(request.headers)
+                log.debug(new Date(), '-> opening websocket connection...', websocketConnectionUrl, {
+                    protocols: upstream.protocols,
+                    headers: upstream.headers
                 })
-                websocketConnections[request.id].on('message', (rawData) => {
+                // Pass subprotocols via the protocols argument (not headers). Forwarding
+                // sec-websocket-protocol as a raw header makes `ws` reject the handshake with
+                // "Server sent a subprotocol but none was requested" (breaks Vite/some HMR clients).
+                websocketConnections[request.id] = new WebSocket(
+                    websocketConnectionUrl,
+                    upstream.protocols,
+                    { headers: upstream.headers }
+                )
+                websocketConnections[request.id].on('message', (rawData, isBinary) => {
                     ws.send(JSON.stringify({
                         type: 'websocket-message',
                         id: request.id,
-                        rawData: rawData
+                        rawData: encodeWebsocketPayload(rawData),
+                        isBinary
                     }))
                 })
                 websocketConnections[request.id].on('close', () => {
@@ -217,7 +283,10 @@ export function PunchmoleClient(apiKey, domain, targetUrl, endpointUrl, log = co
                     !websocketMessageBuffer.find((v) => v.request.id === request.id)
                 ) {
                     log.debug(new Date(), 'websocket message received and ready to send forward', request.id)
-                    websocketConnections[request.id].send(request.rawData)
+                    websocketConnections[request.id].send(
+                        decodeWebsocketPayload(request.rawData),
+                        { binary: !!request.isBinary }
+                    )
                 } else {
                     log.debug(new Date(), 'websocket message received but not ready to send forward yet, buffering...', request.id)
                     websocketMessageBuffer.push({
@@ -227,8 +296,5 @@ export function PunchmoleClient(apiKey, domain, targetUrl, endpointUrl, log = co
                 }
         }
     })
-    eventEmitter.close = function close() {
-        ws.close()
-    }
     return eventEmitter
 }

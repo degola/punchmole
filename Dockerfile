@@ -5,7 +5,7 @@ RUN apk update && apk upgrade
 RUN npm install --omit dev
 COPY . ./
 
-FROM node:24-alpine as production
+FROM node:20-alpine as production
 WORKDIR /app
 RUN adduser -u 82 -D -S -G www-data www-data
 COPY --from=build --chown=www-data:www-data /app ./

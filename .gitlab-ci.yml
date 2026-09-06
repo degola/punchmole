@@ -1,6 +1,3 @@
-image:
-  name: docker:dind
-
 stages:
   - build
   - deploy
@@ -11,6 +8,10 @@ variables:
 
 # this command will be run before every script
 default:
+  # Buildserver daemon requires API >= 1.44; docker:24 client is 1.43.
+  image: docker:git
+  services:
+    - docker:dind
   before_script:
     - export VERSION=v`date +%Y%m%d`-`echo "$CI_COMMIT_SHA" | head -c7`
     - export CI_REGISTRY_FULL_IMAGE="$CI_REGISTRY_IMAGE:$VERSION"
@@ -39,6 +40,9 @@ deploy_production:
   script:
     - echo "Deploy to production"
     - apk update && apk add gettext
+    # Live extras historically applied by hand; keep working if CI vars are unset.
+    - export PUNCHMOLE_FOURTH_DOMAIN="${PUNCHMOLE_FOURTH_DOMAIN:-cortena.ai}"
+    - export PUNCHMOLE_FIFTH_DOMAIN="${PUNCHMOLE_FIFTH_DOMAIN:-cortena.gomsilo.com}"
     - envsubst < $DEPLOYMENT_MANIFEST_PATH
     - envsubst < $DEPLOYMENT_MANIFEST_PATH | kubectl -s $K8S_SERVER --token $K8S_TOKEN apply -f -
   variables:

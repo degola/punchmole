@@ -9,7 +9,6 @@ stringData:
   API_KEYS: "${PUNCHMOLE_API_KEYS}"
 
 ---
-# pod for cronjob apple-crawl-active-keywords
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -42,7 +41,6 @@ spec:
             - name: PORT
               value: "10000"
 ---
-# service for keywords rest service
 kind: Service
 apiVersion: v1
 metadata:
@@ -52,22 +50,36 @@ spec:
   selector:
     app: punchmole-server
   ports:
-    - port: 10000 # Default port for image
+    - port: 10000
       targetPort: 10000
 ---
-# ingress for keywords rest service
+# Traefik ServersTransport: maps former nginx proxy-read/send-timeout (360s).
+apiVersion: traefik.io/v1alpha1
+kind: ServersTransport
+metadata:
+  name: punchmole-server
+  namespace: ${ENVIRONMENT}
+spec:
+  forwardingTimeouts:
+    dialTimeout: 30s
+    responseHeaderTimeout: 360s
+    idleConnTimeout: 360s
+---
+# Wildcard catch-alls — LOW Traefik priority so named hosts win
+# (see ansible-gomsilo/k8s/traefik/ROUTING.md). Edge nginx still terminates
+# public TLS and forwards to Traefik :8443.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: punchmole-server
   namespace: ${ENVIRONMENT}
   annotations:
-    nginx.ingress.kubernetes.io/proxy-send-timeout: "360s"
-    nginx.ingress.kubernetes.io/proxy-read-timeout: "360s"
-    nginx.ingress.kubernetes.io/use-forwarded-headers: "true" # Ensure forwarded headers are used
-    nginx.ingress.kubernetes.io/force-ssl-redirect: "false"  # Disable forced HTTPS redirection
-    nginx.ingress.kubernetes.io/ssl-passthrough: "true"      # Enable SSL passthrough
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/service.serverstransport: ${ENVIRONMENT}-punchmole-server@kubernetescrd
+    traefik.ingress.kubernetes.io/service.passhostheader: "true"
+    traefik.ingress.kubernetes.io/router.priority: "1"
 spec:
+  ingressClassName: traefik
   rules:
     - host: "*.${PUNCHMOLE_DOMAIN}"
       http:
@@ -80,19 +92,18 @@ spec:
                 port:
                   number: 10000
 ---
-# ingress for keywords rest service
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: punchmole-server-secondary-domain
   namespace: ${ENVIRONMENT}
   annotations:
-    nginx.ingress.kubernetes.io/proxy-send-timeout: "360s"
-    nginx.ingress.kubernetes.io/proxy-read-timeout: "360s"
-    nginx.ingress.kubernetes.io/use-forwarded-headers: "true" # Ensure forwarded headers are used
-    nginx.ingress.kubernetes.io/force-ssl-redirect: "false"  # Disable forced HTTPS redirection
-    nginx.ingress.kubernetes.io/ssl-passthrough: "true"      # Enable SSL passthrough
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/service.serverstransport: ${ENVIRONMENT}-punchmole-server@kubernetescrd
+    traefik.ingress.kubernetes.io/service.passhostheader: "true"
+    traefik.ingress.kubernetes.io/router.priority: "1"
 spec:
+  ingressClassName: traefik
   rules:
     - host: "*.${PUNCHMOLE_SECONDARY_DOMAIN}"
       http:
@@ -105,21 +116,68 @@ spec:
                 port:
                   number: 10000
 ---
-# ingress for keywords rest service
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: punchmole-server-third-domain
   namespace: ${ENVIRONMENT}
   annotations:
-    nginx.ingress.kubernetes.io/proxy-send-timeout: "360s"
-    nginx.ingress.kubernetes.io/proxy-read-timeout: "360s"
-    nginx.ingress.kubernetes.io/use-forwarded-headers: "true" # Ensure forwarded headers are used
-    nginx.ingress.kubernetes.io/force-ssl-redirect: "false"  # Disable forced HTTPS redirection
-    nginx.ingress.kubernetes.io/ssl-passthrough: "true"      # Enable SSL passthrough
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/service.serverstransport: ${ENVIRONMENT}-punchmole-server@kubernetescrd
+    traefik.ingress.kubernetes.io/service.passhostheader: "true"
+    traefik.ingress.kubernetes.io/router.priority: "1"
 spec:
+  ingressClassName: traefik
   rules:
     - host: "*.${PUNCHMOLE_THIRD_DOMAIN}"
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: punchmole-server
+                port:
+                  number: 10000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: punchmole-server-fourth-domain
+  namespace: ${ENVIRONMENT}
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/service.serverstransport: ${ENVIRONMENT}-punchmole-server@kubernetescrd
+    traefik.ingress.kubernetes.io/service.passhostheader: "true"
+    traefik.ingress.kubernetes.io/router.priority: "1"
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: "*.${PUNCHMOLE_FOURTH_DOMAIN}"
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: punchmole-server
+                port:
+                  number: 10000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: punchmole-server-fifth-domain
+  namespace: ${ENVIRONMENT}
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/service.serverstransport: ${ENVIRONMENT}-punchmole-server@kubernetescrd
+    traefik.ingress.kubernetes.io/service.passhostheader: "true"
+    traefik.ingress.kubernetes.io/router.priority: "1"
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: "*.${PUNCHMOLE_FIFTH_DOMAIN}"
       http:
         paths:
           - path: /
